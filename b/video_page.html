@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>视频播放页面</title>
+    <meta charset="UTF-8">
+    <!-- 其他样式保持不变 -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .preview-container {
+            /* position: relative; */
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            /* 这个值是根据视频宽高比调整的，例如：如果视频是16:9，则为(9÷16)×100% */
+            overflow: hidden;
+        }
+
+        .preview-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* 或者使用 object-fit: fill/cover 等以适应不同布局需求 */
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* 自定义这个断点以适应你的设计需求 */
+            .preview-container {
+                height: 100%;
+                width: 100%;
+                padding-bottom: 0;
+            }
+
+            .preview-container video {
+                height: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="preview-container">
+        <!-- 视频元素，初始src为空 -->
+        <video id="previewVideo" muted playsinline ondblclick="togglePlayPause()"></video> <!-- 移除了autoplay属性 -->
+    </div>
+
+    <script>
+        var video = document.getElementById('previewVideo');
+        var isMuted = true; // 初始状态为静音
+
+        // 当页面加载完成时执行
+        window.onload = function() {
+            // 获取URL中的查询参数
+            var urlParams = new URLSearchParams(window.location.search);
+            var videoUrl = urlParams.get('videoUrl');
+            // 如果有视频URL，设置到video元素的src属性
+            if (videoUrl) {
+                video.src = decodeURIComponent(videoUrl);
+                // 监听视频的loadedmetadata事件，确保视频元数据加载完成后再播放
+                video.addEventListener('loadedmetadata', function() {
+                    video.play(); // 手动调用播放
+                });
+            }
+        };
+
+        // 监听空格键按下事件
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                toggleMute();
+            }
+        });
+
+        // 监听点击事件
+        document.addEventListener('click', function() {
+            toggleMute();
+        });
+
+        // 双击视频元素切换播放/暂停
+        function togglePlayPause() {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        // 切换静音/恢复音量
+        function toggleMute() {
+            isMuted = video.muted;
+            video.muted = !isMuted; // 切换当前的muted状态
+        }
+
+        // 监听视频的ended事件，实现循环播放
+        video.addEventListener('ended', function() {
+            video.play(); // 重新开始播放
+        });
+    </script>
+</body>
+
+</html>
