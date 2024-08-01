@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频预览</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .preview-container {
+            /* position: relative; */
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            /* 这个值是根据视频宽高比调整的，例如：如果视频是16:9，则为(9÷16)×100% */
+            overflow: hidden;
+        }
+
+        .preview-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* 或者使用 object-fit: fill/cover 等以适应不同布局需求 */
+        }
+
+        @media screen and (max-width: 768px) {
+
+            /* 自定义这个断点以适应你的设计需求 */
+            .preview-container {
+                height: 100%;
+                width: 100%;
+                padding-bottom: 0;
+            }
+
+            .preview-container video {
+                height: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="preview-container">
+        <!-- 根据URL参数加载并播放视频 -->
+        <video id="previewVideo" src="" loop autoplay playsinline></video>
+    </div>
+
+    <script>
+        var videoElement = document.getElementById('previewVideo');
+        var urlParams = new URLSearchParams(window.location.search);
+        var videoUrl = decodeURIComponent(urlParams.get('video'));
+        videoElement.muted = false;
+        // 设置视频源
+        videoElement.src = videoUrl;
+        
+        let observerOptions = { threshold: 0.5 };
+        let observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    let videoElement = entry.target;
+                    videoElement.muted = true; // 如果还没有设置
+                    videoElement.play().catch((error) => console.error('播放失败:', error));
+                }
+            });
+        }, { threshold: 0.5 });
+
+        // 观察视频元素
+        let videoElement1 = document.querySelector('video');
+        observer.observe(videoElement1);
+
+
+        // 检测触摸事件以模拟用户交互
+        document.addEventListener('touchstart', function handleTouchStart() {
+
+            videoElement.play().then(function () {
+                // 播放成功，现在可以解除静音
+                videoElement.muted = false;
+            }).catch(function (error) {
+                console.error('无法播放视频：', error);
+            });
+            // 移除监听器以避免重复触发
+            document.removeEventListener('touchstart', handleTouchStart, false);
+
+
+            // 如果支持自动播放且是静音状态，则尝试播放视频
+            if (videoElement.muted && videoElement.paused) {
+                videoElement.play().catch(function (error) {
+                    console.error('无法自动播放视频：', error);
+                });
+            }
+        }, false);
+        document.addEventListener('click', function handleTouchStart() {
+
+            videoElement.play().then(function () {
+                // 播放成功，现在可以解除静音
+                videoElement.muted = false;
+            }).catch(function (error) {
+                console.error('无法播放视频：', error);
+            });
+            // 移除监听器以避免重复触发
+            document.removeEventListener('touchstart', handleTouchStart, false);
+
+
+            // 如果支持自动播放且是静音状态，则尝试播放视频
+            if (videoElement.muted && videoElement.paused) {
+                videoElement.play().catch(function (error) {
+                    console.error('无法自动播放视频：', error);
+                });
+            }
+        }, false);
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+/* 默认样式，电脑端可以自适应 */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.container video {
+    /*width: calc(33.33% - 20px);  根据需求调整每张图片宽度以及间距 */
+    width: auto;
+    margin: 10px;
+    height: 400px;
+}
+
+/* 媒体查询，当屏幕宽度小于600px时（例如手机端），图片自动调整为一行一张 */
+@media screen and (max-width: 600px) {
+    .container video {
+        width: 100%;
+        margin: 10px 0;
+    }
+}

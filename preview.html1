@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>视频预览</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            /* 这个值是根据视频宽高比调整的，例如：如果视频是16:9，则为(9÷16)×100% */
+            overflow: hidden;
+        }
+
+        .preview-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* 或者使用 object-fit: fill/contain 等以适应不同布局需求 */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="preview-container">
+        <!-- 根据URL参数加载并播放视频 -->
+        <video id="previewVideo" src="" autoplay playsinline loop ></video>
+    </div>
+    <!-- <video id="previewVideo" src="" autoplay playsinline loop controls></video> -->
+
+    <script>
+        // 获取URL中的video参数
+        var urlParams = new URLSearchParams(window.location.search);
+        var videoUrl = decodeURIComponent(urlParams.get('video'));
+
+        // 设置视频源
+        document.getElementById('previewVideo').src = videoUrl;
+    </script>
+</body>
+
+</html>
