@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>备忘录记事本</title>
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f4;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        #memoContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            overflow-y: auto;
+            /* 添加垂直滚动条 */
+            max-height: calc(100vh - 100px);
+            /* 设置最大高度，减去顶部和底部的空间 */
+        }
+
+        .memo {
+            flex-basis: calc(33% - 5%);
+            /* 每个备忘录占据的宽度 */
+            min-width: 300px;
+            /* 最小宽度，防止在窄屏设备上太挤 */
+            max-width: calc(33.33% - 40px);
+            /* 最大宽度 */
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        @media (max-width: 768px) {
+            .memo {
+                width: calc(50% - 40px);
+                /* 在小屏幕上减少列数 */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .memo {
+                width: 100%;
+                /* 在更小的屏幕上只有一列 */
+            }
+        }
+
+        .memo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .memo.pinned {
+            border-left: 4px solid #4CAF50;
+            background-color: #dff0d8;
+        }
+
+        .memo .actions button {
+            margin-left: 5px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .memo .actions button:hover {
+            background-color: #45a049;
+        }
+
+        #addMemoBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 24px;
+        }
+
+        #addMemoBtn:hover {
+            background-color: #45a049;
+        }
+
+
+        .modal {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+            /* 允许滚动长内容 */
+            transition: opacity 0.3s ease-in-out;
+            /* 平滑过渡 */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            /* 更多顶部空间 */
+            padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-body {
+            padding: 20px 0;
+        }
+
+        .modal-footer {
+            padding-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-input,
+        .modal-textarea {
+            width: 100%;
+            height: 30px;
+            /* padding: 15px; */
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            outline: none;
+            /* 移除默认焦点边框 */
+            transition: border-color 0.3s ease-in-out;
+        }
+
+        .modal-input:focus,
+        .modal-textarea:focus {
+            border-color: #4CAF50;
+            /* 聚焦时改变边框颜色 */
+        }
+
+        button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="memoContainer"></div>
+    <button id="addMemoBtn">+</button>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2 id="modalTitle">备忘录</h2>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="modalTitleInput" class="modal-input" placeholder="标题">
+                <textarea id="modalContentInput" class="modal-input" placeholder="内容"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveMemo()">保存</button>
+                <button onclick="closeModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var memos = JSON.parse(localStorage.getItem('memos')) || [];
+        var currentMemoId = null;
+
+        function createMemoElement(memo) {
+            var memoDiv = document.createElement('div');
+            memoDiv.className = 'memo ' + (memo.pinned ? 'pinned' : '');
+            memoDiv.innerHTML = `
+            <div class="title">${memo.title}</div>
+            <div class="time">${new Date(memo.time).toLocaleString()}</div>
+            <div class="content">${memo.content}</div>
+            <div class="actions">
+                
+            <button onclick="editMemo(${memo.id})">编辑</button>
+            <button onclick="pinMemo(${memo.id})">置顶</button>
+            <button onclick="deleteMemo(${memo.id})">删除</button>
+            </div>
+            `;
+            return memoDiv;
+        }
+
+
+        function renderMemos() {
+            var container = document.getElementById('memoContainer');
+            container.innerHTML = '';
+            memos.forEach((memo, index) => {
+                container.appendChild(createMemoElement(memo));
+            });
+        }
+
+        function openModal(memoId) {
+            currentMemoId = memoId;
+            document.getElementById('editModal').style.display = 'block';
+            document.getElementById('modalTitle').innerText = memoId ? '编辑备忘录' : '新增备忘录';
+
+            // 如果是编辑模式，设置输入框的值为备忘录的当前值
+            if (memoId) {
+                // console.log(1111);
+                var memo = memos.find(m => m.id === memoId);
+                document.getElementById('modalTitleInput').value = memo.title;
+                document.getElementById('modalContentInput').value = memo.content;
+            } else {
+                // 如果是新建模式，清空输入框
+                document.getElementById('modalTitleInput').value = '';
+                document.getElementById('modalContentInput').value = '';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentMemoId = null;
+        }
+
+        function saveMemo() {
+            var title = document.getElementById('modalTitleInput').value;
+            var content = document.getElementById('modalContentInput').value;
+            if (currentMemoId) {
+                var memo = memos.find(m => m.id === currentMemoId);
+                memo.title = title;
+                memo.content = content;
+            } else {
+                var newMemo = {
+                    id: Date.now(),
+                    title: title,
+                    content: content,
+                    pinned: false,
+                    time: new Date().toISOString()
+                };
+                memos.push(newMemo);
+            }
+            renderMemos();
+            saveMemos();
+            closeModal();
+        }
+
+        function addNewMemo() {
+            openModal(null);
+        }
+
+        function editMemo(id) {
+            openModal(id);
+        }
+
+        function pinMemo(id) {
+            var memo = memos.find(m => m.id === id);
+            if (memo) {
+                memo.pinned = !memo.pinned;
+                // Sort memos by pinned status
+                memos.sort((a, b) => b.pinned - a.pinned);
+                renderMemos();
+                saveMemos();
+            }
+        }
+
+        function deleteMemo(id) {
+            var index = memos.findIndex(m => m.id === id);
+            if (index > -1) {
+                memos.splice(index, 1);
+                renderMemos();
+                saveMemos();
+            }
+        }
+
+        function saveMemos() {
+            localStorage.setItem('memos', JSON.stringify(memos));
+        }
+
+        function loadMemos() {
+            memos = JSON.parse(localStorage.getItem('memos')) || [];
+            renderMemos();
+        }
+        // 获取新增按钮
+        var addMemoButton = document.getElementById('addMemoBtn');
+
+        // 监听新增按钮的点击事件
+        addMemoButton.addEventListener('click', function () {
+            // 打开模态框
+            openModal(null);
+        });
+        // function openModal(memoId) {
+        //     currentMemoId = memoId;
+        //     document.getElementById('editModal').style.display = 'block';
+        //     document.getElementById('modalTitle').innerText = memoId ? '编辑备忘录' : '新增备忘录';
+        //     document.getElementById('modalTitleInput').value = ''; // 清空标题输入框
+        //     document.getElementById('modalContentInput').value = ''; // 清空内容输入框
+        // }
+
+        window.onload = loadMemos;
+
+    </script>
+
+</body>
+
+</html>
